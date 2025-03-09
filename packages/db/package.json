@@ -1,5 +1,5 @@
 {
-  "name": "@noah-template/db",
+  "name": "@repo/db",
   "version": "0.1.0",
   "private": true,
   "exports": {
@@ -21,6 +21,7 @@
     "drizzle-orm": "0.40.0"
   },
   "devDependencies": {
+    "@repo/typescript-config": "workspace:*",
     "drizzle-kit": "0.30.5",
     "typescript": "5.8.2"
   },
