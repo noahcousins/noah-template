@@ -5,8 +5,11 @@ import { createAuthClient } from "better-auth/react";
 import { useState } from "react";
 
 export default function Page() {
+  // Import from environment package when ready
   const { signIn, signUp } = createAuthClient({
     baseURL: "http://localhost:8787/api/auth",
+    // In a production app, you would use:
+    // baseURL: process.env.NEXT_PUBLIC_API_URL + "/api/auth",
   });
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");

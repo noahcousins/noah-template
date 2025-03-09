@@ -1,0 +1,224 @@
+---
+title: Authentication
+description: Implementing authentication with Better Auth in the API
+---
+
+# Authentication
+
+Noah Template uses [Better Auth](https://docs.betterauth.io/) for authentication services in the API. This provides a complete solution for user management, social login, and session handling.
+
+## Better Auth Integration
+
+Better Auth is integrated with the API service and connects to the database for user storage.
+
+### Configuration
+
+The authentication setup is in `apps/api/src/lib/auth.ts`:
+
+```typescript
+import { betterAuth } from "better-auth";
+import { drizzleAdapter } from "better-auth/adapters/drizzle";
+import { serverEnv } from "@repo/env";
+import {
+  db,
+  users,
+  sessions,
+  accounts,
+  verificationTokens,
+} from "@repo/db/index";
+
+// Schema mapping for Better Auth
+const authSchema = {
+  user: users,
+  session: sessions,
+  account: accounts,
+  verificationToken: verificationTokens,
+};
+
+// OAuth provider configuration
+const configuredProviders = Object.entries(serverEnv.auth.providers)
+  .filter(([_, config]) => config !== null)
+  .reduce((acc, [provider, config]) => {
+    if (config) {
+      acc[provider] = config;
+    }
+    return acc;
+  }, {} as Record<string, { clientId: string; clientSecret: string }>);
+
+// Better Auth configuration
+export const auth = betterAuth({
+  baseURL: serverEnv.auth.url,
+  secret: serverEnv.auth.secret,
+  socialProviders: configuredProviders,
+  emailAndPassword: {
+    enabled: true,
+    autoSignIn: true,
+    minPasswordLength: 8,
+  },
+  cookie: {
+    name: "better_auth_session",
+    httpOnly: true,
+    path: "/",
+    secure: serverEnv.environment.isProduction,
+    sameSite: "lax",
+    maxAge: 30 * 24 * 60 * 60, // 30 days in seconds
+  },
+  trustedOrigins: serverEnv.auth.allowedOrigins,
+  database: drizzleAdapter(db, {
+    provider: "pg",
+    schema: authSchema,
+  }),
+  advanced: {
+    crossSubDomainCookies: {
+      enabled: serverEnv.auth.crossSubdomainCookies,
+    },
+    defaultCookieAttributes: {
+      sameSite: "lax",
+      secure: serverEnv.environment.isProduction,
+    },
+  },
+});
+```
+
+### API Routes
+
+Authentication routes are handled in `apps/api/src/index.ts`:
+
+```typescript
+// Authentication handler for /api/auth/* routes
+app.on(["POST", "GET"], "/api/auth/**", (c) => {
+  return auth.handler(c.req.raw);
+});
+
+// Session middleware to extract user information
+app.use("*", async (c, next) => {
+  const session = await auth.api.getSession({ headers: c.req.raw.headers });
+
+  if (!session) {
+    c.set("user", null);
+    c.set("session", null);
+    return next();
+  }
+
+  c.set("user", session.user);
+  c.set("session", session.session);
+  return next();
+});
+
+// Get current session information
+app.get("/session", async (c) => {
+  const session = c.get("session");
+  const user = c.get("user");
+
+  if (!user) return c.body(null, 401);
+
+  return c.json({
+    session,
+    user,
+  });
+});
+```
+
+## Authentication Flow
+
+1. **Registration:** Users can register with email/password or OAuth providers
+2. **Login:** Users can log in with credentials or social accounts
+3. **Session:** After successful authentication, a session cookie is set
+4. **Verification:** The API middleware extracts and verifies session information
+5. **Access:** Protected routes check for user presence
+
+## Available Auth Endpoints
+
+Better Auth provides several endpoints at the `/api/auth/` path:
+
+| Endpoint | Method | Description |
+|----------|--------|-------------|
+| `/api/auth/login` | POST | Email/password login |
+| `/api/auth/register` | POST | Register with email/password |
+| `/api/auth/logout` | POST | Sign out |
+| `/api/auth/session` | GET | Get current session |
+| `/api/auth/{provider}` | GET | OAuth login for providers |
+| `/api/auth/verify` | POST | Verify email address |
+
+## Supported OAuth Providers
+
+The template supports multiple OAuth providers:
+
+- Discord
+- Google
+- GitHub
+- Microsoft
+- Twitch
+- GitLab
+
+To configure a provider, add the appropriate environment variables:
+
+```
+DISCORD_CLIENT_ID=your_client_id
+DISCORD_CLIENT_SECRET=your_client_secret
+```
+
+## Creating Protected Routes
+
+To create protected routes that require authentication:
+
+```typescript
+// Example protected route
+app.get("/api/protected", async (c) => {
+  const user = c.get("user");
+  
+  if (!user) {
+    return c.json({ error: "Unauthorized" }, 401);
+  }
+  
+  return c.json({ 
+    message: "This is a protected route",
+    user: {
+      id: user.id,
+      email: user.email,
+      name: user.name
+    }
+  });
+});
+```
+
+## Client Integration
+
+The web application connects to the authentication API using the Better Auth client:
+
+```typescript
+// In web application
+import { createAuthClient } from "better-auth/react";
+
+// Create auth client
+const { signIn, signUp } = createAuthClient({
+  baseURL: "http://localhost:8787/api/auth",
+});
+
+// Sign in with email
+await signIn.email({ 
+  email: "user@example.com", 
+  password: "password123" 
+});
+
+// Sign up with email
+await signUp.email({ 
+  email: "newuser@example.com", 
+  password: "password123", 
+  name: "New User" 
+});
+```
+
+## Security Considerations
+
+1. **HTTPS:** Always use HTTPS in production
+2. **Secure Cookies:** Cookies are set with `httpOnly` and `secure` flags
+3. **CORS:** API has CORS protections to prevent unauthorized access
+4. **Environment Variables:** Auth secrets are stored in environment variables
+
+## Troubleshooting
+
+- **CORS Issues:** Ensure `ALLOWED_ORIGINS` includes all frontend domains
+- **Cookie Problems:** Check `BETTER_AUTH_URL` and cross-domain cookie settings
+- **Login Failures:** Verify database connection and user table structure
+- **Social Login Issues:** Confirm provider credentials and callback URLs

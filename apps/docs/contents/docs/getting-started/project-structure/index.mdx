@@ -1,200 +1,183 @@
 ---
 title: Project Structure
-description: This section provides an overview of Project Structure.
+description: A guide to the Noah Template project organization and codebase structure.
 ---
 
-## Project Structure Overview
+# Project Structure
 
-### app
+Noah Template is organized as a monorepo using Turborepo, which allows for efficient management of multiple packages and applications within a single repository.
 
-This folder contains the main application code for Next.js, managing layouts, routing, and specific content pages. It is organized to support both the `docs` and `blog` sections, with dedicated pages and layouts for each section.
+## Overview
 
-<Files
+The repository is structured with two main directories:
+
+- `apps/` - Contains standalone applications
+- `packages/` - Contains shared libraries and utilities
+
+## Directory Structure
+
+<FileSys
   items={[
     {
       type: "folder",
-      name: "app",
+      name: "noah-template",
       isOpen: true,
       children: [
-        { type: "file", name: "page.tsx" },
-        { type: "file", name: "layout.tsx" },
         {
           type: "folder",
-          name: "blog",
+          name: "apps",
+          isOpen: true,
           children: [
-            { type: "file", name: "page.tsx" },
             {
               type: "folder",
-              name: "[slug]",
-              children: [{ type: "file", name: "page.tsx" }],
+              name: "api",
+              children: [
+                { type: "file", name: "src/index.ts" },
+                { type: "file", name: "wrangler.jsonc" },
+              ],
+            },
+            {
+              type: "folder",
+              name: "web",
+              children: [
+                {
+                  type: "folder",
+                  name: "app",
+                  children: [
+                    { type: "file", name: "layout.tsx" },
+                    { type: "file", name: "page.tsx" },
+                  ],
+                },
+                { type: "folder", name: "components" },
+              ],
+            },
+            {
+              type: "folder",
+              name: "docs",
+              children: [
+                { type: "folder", name: "app" },
+                { type: "folder", name: "contents" },
+              ],
             },
           ],
         },
         {
           type: "folder",
-          name: "docs",
-          children: [
-            { type: "file", name: "layout.tsx" },
-            { type: "file", name: "[[...slug]].tsx" },
-          ],
-        },
-      ],
-    },
-  ]}
-/>
-
-### components
-
-This folder contains all reusable components used throughout the project. It’s structured to categorize components, making it easy to locate and manage UI elements, Markdown customizations, and navigation.
-
-<Files
-  items={[
-    {
-      type: "folder",
-      name: "components",
-      isOpen: true,
-      children: [
-        {
-          type: "folder",
-          name: "ui",
-          isOpen: true,
-          children: [],
-        },
-        {
-          type: "folder",
-          name: "markdown",
+          name: "packages",
           isOpen: true,
           children: [
-            { type: "file", name: "note.tsx" },
-            { type: "file", name: "image.tsx" },
-            { type: "file", name: "table.tsx" },
-          ],
-        },
-        { type: "file", name: "navbar.tsx" },
-      ],
-    },
-  ]}
-/>
-
-
-### styles
-
-This folder contains global and component-specific CSS files, allowing for project-wide styling consistency and customizations.
-
-<Files
-  items={[
-    {
-      type: "folder",
-      name: "styles",
-      isOpen: true,
-      children: [
-        { type: "file", name: "globals.css" },
-        { type: "file", name: "syntax.css" },
-        { type: "file", name: "overrides.css" },
-      ],
-    },
-  ]}
-/>
-
-
-### contents
-
-This folder stores all Markdown content for the documentation and blog sections, with clear organization by content type. Each Markdown file represents a single piece of content, with frontmatter used for metadata.
-
-<Files
-  items={[
-    {
-      type: "folder",
-      name: "contents",
-      isOpen: true,
-      children: [
-        {
-          type: "folder",
-          name: "docs",
-          isOpen: true,
-          children: [
-            { type: "file", name: "getting-started.md" },
-            { type: "file", name: "api-reference.md" },
             {
               type: "folder",
-              name: "tutorials",
-              isOpen: true,
-              children: [{ type: "file", name: "tutorial-1.md" }],
+              name: "db",
+              children: [
+                { type: "folder", name: "migrations" },
+                { type: "file", name: "src/schema.ts" },
+              ],
             },
+            {
+              type: "folder",
+              name: "ui",
+              children: [
+                {
+                  type: "folder",
+                  name: "src/components",
+                },
+              ],
+            },
+            {
+              type: "folder",
+              name: "env",
+              children: [
+                { type: "file", name: "src/index.ts" },
+              ],
+            },
+            { type: "folder", name: "eslint-config" },
+            { type: "folder", name: "typescript-config" },
           ],
         },
-        {
-          type: "folder",
-          name: "blogs",
-          isOpen: true,
-          children: [
-            { type: "file", name: "intro-to-project.md" },
-            { type: "file", name: "dev-updates.md" },
-          ],
-        },
+        { type: "file", name: "package.json" },
+        { type: "file", name: "pnpm-workspace.yaml" },
+        { type: "file", name: "turbo.json" },
+        { type: "file", name: "CLAUDE.md" },
       ],
     },
   ]}
 />
 
+## Key Packages and Applications
 
-### public
+### Applications (`apps/`)
 
-This folder holds all static assets, such as images, videos, fonts, and icons. These files are directly accessible via URL, so it’s important to avoid sensitive or private content here.
-<Files
-  items={[
-    {
-      type: "folder",
-      name: "public",
-      isOpen: true,
-      children: [
-        {
-          type: "folder",
-          name: "images",
-          isOpen: true,
-          children: [
-            { type: "file", name: "logo.png" },
-            { type: "file", name: "banner.jpg" },
-          ],
-        },
-        {
-          type: "folder",
-          name: "icons",
-          children: [],
-        },
-        {
-          type: "folder",
-          name: "videos",
-          children: [],
-        },
-      ],
-    },
-  ]}
-/>
+#### Web Application (`apps/web/`)
 
+The Next.js frontend application with:
+- App Router architecture
+- Authentication UI
+- React components
+- Tailwind styling
 
-### lib
+#### API (`apps/api/`)
 
-This folder contains helper functions and utilities used across the application, such as Markdown parsing and routing logic. These utilities help keep the codebase clean and organized by separating out common functionality.
+The Hono-based API service:
+- Authentication endpoints
+- RESTful API endpoints
+- Cloudflare Workers deployment configuration
 
-<Files
-  items={[
-    {
-      type: "folder",
-      name: "lib",
-      isOpen: true,
-      children: [
-        { type: "file", name: "markdown.ts" },
-        { type: "file", name: "routes-config.ts" },
-        { type: "file", name: "utils.tsx" },
-      ],
-    },
-  ]}
-/>
+#### Documentation (`apps/docs/`)
 
-### Additional
+The documentation site:
+- MDX content
+- Interactive components
+- Search functionality
 
-- **`package.json`**: Contains metadata about the project, dependencies, and scripts for building and running the application.
-- **`tailwind.config.ts`**: Configures Tailwind CSS, allowing customization of theme colors, fonts, and responsive breakpoints specific to this project.
+### Packages (`packages/`)
 
-This structure organizes your project in a way that supports scalability and maintainability, making it easier to navigate and work on different sections of the application.
+#### Database (`packages/db/`)
+
+Database integration with:
+- DrizzleORM schema definitions
+- Database migrations
+- Connection management
+
+#### UI Library (`packages/ui/`)
+
+Shared UI components:
+- Shadcn UI components
+- Custom components
+- Global styles
+
+#### Environment (`packages/env/`)
+
+Environment variable management:
+- Type-safe environment schema
+- Validation with Zod
+- Environment variable structuring
+
+#### Configuration Packages
+
+- `eslint-config`: Shared ESLint configuration
+- `typescript-config`: Shared TypeScript configuration
+
+## Monorepo Configuration
+
+The monorepo is configured with:
+
+- **pnpm Workspaces**: Defined in `pnpm-workspace.yaml`
+- **Turborepo**: Configured in `turbo.json` for efficient task running
+- **Package Dependencies**: Each package defines its own dependencies
+- **Shared TypeScript Config**: Common TypeScript settings
+
+## Package Interdependencies
+
+<Note title="Workspace Dependencies">
+  Packages reference each other using the `workspace:*` syntax in their package.json files.
+  For example: `"@repo/ui": "workspace:*"`
+</Note>
+
+Packages within the monorepo depend on each other:
+
+- `apps/web` depends on `packages/ui` and `packages/db`
+- `apps/api` depends on `packages/db` and `packages/env`
+- `packages/db` depends on `packages/env`
+
+This structure allows for efficient code sharing while maintaining separation of concerns.

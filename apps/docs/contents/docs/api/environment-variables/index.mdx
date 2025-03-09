@@ -1,0 +1,204 @@
+---
+title: Environment Variables
+description: Managing environment variables in the Noah Template API
+---
+
+# Environment Variables
+
+Noah Template includes a dedicated environment variables management system that provides type safety, validation, and structured access to configuration values.
+
+## Environment Variables Package
+
+The `@repo/env` package centralizes environment variable handling across the monorepo:
+
+```typescript
+// packages/env/src/index.ts
+import { z } from "zod";
+
+// Define environment schema with validation
+const envSchema = z.object({
+  // Database
+  DATABASE_URL: z.string().optional().default("postgresql://user:password@localhost:5432/db"),
+  
+  // Auth
+  BETTER_AUTH_SECRET: z.string().optional().default("dev-only-secret-do-not-use-in-production"),
+  BETTER_AUTH_URL: z.string().optional().default("http://localhost:8787"),
+  ALLOWED_ORIGINS: z.string().optional().default("http://localhost:8787,http://localhost:3000"),
+
+  // OAuth providers
+  DISCORD_CLIENT_ID: z.string().optional(),
+  DISCORD_CLIENT_SECRET: z.string().optional(),
+  GOOGLE_CLIENT_ID: z.string().optional(),
+  // ... other providers
+
+  // Environment
+  NODE_ENV: z.enum(["development", "production", "test"]).default("development"),
+  ENABLE_CROSS_SUBDOMAIN_COOKIES: z.enum(["true", "false"]).optional().default("true"),
+});
+
+// ... parsing logic
+
+// Structured environment exports
+export const serverEnv = {
+  database: {
+    url: env.DATABASE_URL,
+  },
+  auth: {
+    secret: env.BETTER_AUTH_SECRET,
+    url: env.BETTER_AUTH_URL,
+    allowedOrigins: env.ALLOWED_ORIGINS?.split(",") || [],
+    crossSubdomainCookies: env.ENABLE_CROSS_SUBDOMAIN_COOKIES === "true",
+    providers: {
+      // Provider configurations
+    },
+  },
+  environment: {
+    isProduction: env.NODE_ENV === "production",
+    isDevelopment: env.NODE_ENV === "development",
+    isTest: env.NODE_ENV === "test",
+    nodeEnv: env.NODE_ENV,
+  },
+};
+
+// Client-safe environment variables
+export const clientEnv = {
+  auth: {
+    url: env.BETTER_AUTH_URL,
+  },
+  environment: {
+    isProduction: env.NODE_ENV === "production",
+    isDevelopment: env.NODE_ENV === "development",
+    nodeEnv: env.NODE_ENV,
+  },
+};
+```
+
+## Environment Files
+
+Several types of environment files are used:
+
+1. `.env` - Base environment variables
+2. `.env.development` - Development-specific variables
+3. `.env.example` - Template for environment setup
+4. `.dev.vars` - Local secrets (not committed to the repository)
+
+Example `.env` file for the API:
+
+```bash
+# Database connection
+DATABASE_URL=postgresql://username:password@hostname:5432/database
+
+# Auth settings
+BETTER_AUTH_SECRET=your-secret-key
+BETTER_AUTH_URL=http://localhost:8787
+ALLOWED_ORIGINS=http://localhost:8787,http://localhost:3000
+
+# Environment
+NODE_ENV=development
+ENABLE_CROSS_SUBDOMAIN_COOKIES=true
+```
+
+## Wrangler Configuration
+
+For Cloudflare Workers deployment, the `wrangler.jsonc` file specifies environment variables:
+
+```jsonc
+{
+  "name": "api",
+  "main": "src/index.ts",
+  "compatibility_date": "2025-03-08",
+  "compatibility_flags": ["nodejs_compat"],
+  "dev": {
+    "envPath": ".env"
+  },
+  "vars": {
+    "NODE_ENV": "development"
+  }
+}
+```
+
+For different environments, separate configuration files are used:
+- `wrangler.staging.jsonc` - Staging environment 
+- `wrangler.production.jsonc` - Production environment
+
+## Required Environment Variables
+
+The following variables are required for the API to function properly:
+
+| Variable | Description | Example |
+|----------|-------------|---------|
+| `DATABASE_URL` | PostgreSQL connection string | `postgresql://user:pass@host:5432/db` |
+| `BETTER_AUTH_SECRET` | Secret key for Better Auth | Random string, minimum 32 characters |
+| `BETTER_AUTH_URL` | Base URL for the API | `http://localhost:8787` |
+| `ALLOWED_ORIGINS` | CORS origins (comma-separated) | `http://localhost:3000,http://localhost:8787` |
+
+## Using Environment Variables
+
+In the codebase, environment variables are accessed through the structured exports:
+
+```typescript
+import { serverEnv } from "@repo/env";
+
+// Database connection
+const dbUrl = serverEnv.database.url;
+
+// Auth configuration
+const authSecret = serverEnv.auth.secret;
+const allowedOrigins = serverEnv.auth.allowedOrigins;
+
+// Environment checks
+if (serverEnv.environment.isProduction) {
+  // Production-specific code
+}
+```
+
+## Validation and Safety
+
+The environment system includes validation through Zod:
+
+- Required fields are enforced in production
+- Development can fall back to defaults
+- Type safety ensures correct usage
+- Structured access prevents typos and errors
+
+## Environment-Specific Deployment
+
+Different deployment environments use different commands:
+
+```bash
+# Development
+pnpm dev
+
+# Staging deployment
+pnpm deploy:staging
+
+# Production deployment
+pnpm deploy:prod
+```
+
+Each command uses the appropriate Wrangler configuration file with environment-specific variables.
+
+## Secrets Management
+
+For production secrets, use Wrangler's secrets management:
+
+```bash
+# Set a secret for production
+wrangler secret put BETTER_AUTH_SECRET --env production
+
+# Set a secret for staging
+wrangler secret put DATABASE_URL --env staging
+```
+
+<Note title="Security">
+  Never commit sensitive values like database passwords or API keys to your
+  repository. Always use environment variables or secrets for these values.
+</Note>
+
+## Best Practices
+
+1. **Local Development:** Use `.env` file for local development
+2. **Example Template:** Keep `.env.example` updated for new team members
+3. **Secret Separation:** Use `.dev.vars` for local secrets
+4. **Production Security:** Use Wrangler secrets for production
+5. **Type Safety:** Always access values through the `serverEnv` object

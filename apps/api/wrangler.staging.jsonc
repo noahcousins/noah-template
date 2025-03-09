@@ -1,0 +1,9 @@
+{
+  "name": "api-staging",
+  "main": "src/index.ts",
+  "compatibility_date": "2025-03-08",
+  "compatibility_flags": ["nodejs_compat"],
+  "vars": {
+    "NODE_ENV": "staging"
+  }
+}

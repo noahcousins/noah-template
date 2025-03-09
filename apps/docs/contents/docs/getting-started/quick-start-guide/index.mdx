@@ -1,118 +1,116 @@
 ---
 title: Quick Start Guide
-description: This section provides an overview of Quick Start Guide.
+description: Get up and running with Noah Template in minutes
 ---
 
-Follow these simple instructions to set up your project efficiently and begin creating content without delay!:
+# Quick Start Guide
 
-## Documentation
+This guide will help you quickly get up and running with Noah Template for development.
 
-1. **Configure Routing**
+## Prerequisites
 
-   - Open the `@lib/route-config.ts` file and add your routing pages:
+Ensure you have:
+- Node.js (v18+)
+- pnpm (v8+)
+- PostgreSQL database access
 
-   
-     ```typescript:route-config.ts
-     export const ROUTES: EachRoute[] = [
-       // Add new route below
-       {
-         title: "Fundamentals",
-         href: "/fundamentals",
-         noLink: true, // Set to true to prevent routing
-         items: [
-           // All the sub-sections under `fundamentals`
-           { title: "HTTP Server", href: "/http-server" },
-         ],
-       },
-     ];
-     ```
+## Five-Minute Setup
 
-2. **Create Content Structure**
+<Stepper>
+  <StepperItem title="Clone and Install">
+    ```bash
+    # Clone the repository
+    git clone https://github.com/yourusername/noah-template.git
+    cd noah-template
+    
+    # Install dependencies
+    pnpm install
+    ```
+  </StepperItem>
 
-   - Navigate to the `@content/docs` directory and create a folder named `fundamentals`, as defined in the `route-config` file. Within this folder, create a subfolder named `http-server`, and inside that, create an `index.mdx` file that will render when you navigate to `/fundamentals/http-server`:
+  <StepperItem title="Configure Environment">
+    Create a `.env` file in the `apps/api` directory:
+    
+    ```bash
+    # Database
+    DATABASE_URL=postgresql://username:password@localhost:5432/dbname
+    
+    # Auth
+    BETTER_AUTH_SECRET=your-secret-here
+    BETTER_AUTH_URL=http://localhost:8787
+    ALLOWED_ORIGINS=http://localhost:3000,http://localhost:8787
+    ```
+  </StepperItem>
 
-<Files
-  items={[
-    {
-      type: "folder",
-      name: "content",
-      isOpen: true,
-      children: [
-        {
-          type: "folder",
-          name: "docs",
-          isOpen: true,
-          children: [
-            {
-              type: "folder",
-              name: "fundamentals",
-              isOpen: true,
-              children: [
-                {
-                  type: "folder",
-                  name: "http-server",
-                  isOpen: true,
-                  children: [{ type: "file", name: "index.mdx" }],
-                },
-              ],
-            },
-          ],
-        },
-      ],
-    },
-  ]}
-/>
+  <StepperItem title="Start Development Servers">
+    ```bash
+    # Start all services
+    pnpm dev
+    ```
+    
+    This will start:
+    - Web app on http://localhost:3000
+    - API on http://localhost:8787
+    - Docs on http://localhost:3001
+  </StepperItem>
+</Stepper>
 
+## Key Development Commands
 
-3. **Write Your Markdown Content**
-   - Start writing your markdown content inside the `index.mdx` file.
+| Command | Description |
+|---------|-------------|
+| `pnpm dev` | Start all development servers |
+| `pnpm build` | Build all packages and applications |
+| `pnpm lint` | Run linting on all packages |
+| `pnpm -F api dev` | Start just the API server |
+| `pnpm -F web dev` | Start just the web application |
+| `pnpm -F docs dev` | Start just the documentation site |
 
-<Note type="warning">
-  Be sure to include frontmatter at the beginning of the file, which is used for
-  the page title and description:
-</Note>
+## Database Commands
 
-     ```markdown:index.mdx showLineNumbers {1-4}
-     ---
-     title: HTTP Server
-     description: This section is about HTTP Server.
-     ---
+```bash
+# Push schema changes to database
+pnpm -F @repo/db db:push
 
-     <!-- Here goes your markdown content -->
-     ```
+# Generate migrations
+pnpm -F @repo/db db:generate
 
-4. **Run Your Application**
-   - Ensure your application is running. Navigate to `http://localhost:3000/docs/fundamentals/http-server` to view your content. You should also see it in the left panel, allowing you to navigate to other pages.
+# Run migrations
+pnpm -F @repo/db db:migrate
 
-## Blogs
-
-To get started with blogs, follow these steps:
-
-- Navigate to the `@content/blogs` directory and create a file with a unique name prefixed with `.mdx`, then start writing the markdown content inside.
-
-<Note type="warning">
-  Make sure to add the following frontmatter to format data for the blogs
-  properly
-</Note>
-
-```markdown:blog-name.mdx
----
-title: "Building a Recursive File System with React: A Deep Dive"
-description: "Explore how to create a recursive file system in React. This blog post provides a comprehensive guide on building a file system where folders and files can be nested, added, renamed, and deleted."
-date: 02-09-2024
-authors:
-  - avatar: "https://ui.shadcn.com/avatars/02.png"
-    handle: nisabmohd
-    username: Nisab Mohd
-    handleUrl: "https://github.com/nisabmohd"
-cover: "https://img.freepik.com/premium-vector/many-monsters-various-colors-doodle-come-bless-birthday-happy_577083-84.jpg?w=826"
----
-
-<!-- Your blog markdown content -->
+# Open Drizzle Studio
+pnpm -F @repo/db db:studio
 ```
 
-- Navigate to your local development server at `http://localhost:3000/blog`, where you will see your blog listed and sorted based on date. You can navigate to any blog to read it.
+## Authentication Flow
 
-## Explore Further
+The template includes a complete authentication system using Better Auth:
 
-This section serves as your starting point for exploring the application. By following the steps above, you can quickly and easily set up your content. For more customization and control, please refer to the following pages.
+1. User visits the sign-in page on the web app
+2. Authentication requests are sent to the API
+3. API validates credentials and creates a session
+4. Session cookie is returned to the web app
+
+<Note title="Auth Endpoints">
+  The authentication API is available at `/api/auth/*` on the API server.
+  The web app is pre-configured to connect to these endpoints.
+</Note>
+
+## Next Steps
+
+After getting the development environment running:
+
+1. Explore the [Project Structure](/docs/getting-started/project-structure)
+2. Learn about the [API](/docs/api/overview)
+3. Customize the [Web Frontend](/docs/web/overview)
+4. Set up the [Database Schema](/docs/database/schema)
+
+## Troubleshooting
+
+If you encounter issues:
+
+- Ensure all environment variables are correctly set
+- Check that PostgreSQL is running and accessible
+- Make sure all packages are installed with `pnpm install`
+- Try restarting the development servers with `pnpm dev`
+- Check the console for specific error messages

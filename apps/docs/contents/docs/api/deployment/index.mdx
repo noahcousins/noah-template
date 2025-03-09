@@ -1,0 +1,217 @@
+---
+title: API Deployment
+description: Guide to deploying the Noah Template API to Cloudflare Workers
+---
+
+# API Deployment
+
+Noah Template's API is designed to be deployed to [Cloudflare Workers](https://workers.cloudflare.com/), a serverless platform that offers global distribution, high performance, and low latency.
+
+## Deployment Prerequisites
+
+Before deploying, ensure you have:
+
+1. A [Cloudflare account](https://dash.cloudflare.com/sign-up)
+2. The [Wrangler CLI](https://developers.cloudflare.com/workers/wrangler/install-and-update/) installed and authenticated
+3. Your environment variables configured properly
+4. A PostgreSQL database (like [Neon](https://neon.tech/)) accessible from Cloudflare Workers
+
+## Deployment Configuration
+
+The API uses Wrangler for deployment, with separate configuration files for different environments:
+
+### Main Configuration (wrangler.jsonc)
+
+```jsonc
+{
+  "name": "api",
+  "main": "src/index.ts",
+  "compatibility_date": "2025-03-08",
+  "compatibility_flags": ["nodejs_compat"],
+  "dev": {
+    "envPath": ".env"
+  },
+  "vars": {
+    "NODE_ENV": "development"
+  }
+}
+```
+
+### Staging Configuration (wrangler.staging.jsonc)
+
+```jsonc
+{
+  "name": "api-staging",
+  "main": "src/index.ts",
+  "compatibility_date": "2025-03-08",
+  "compatibility_flags": ["nodejs_compat"],
+  "vars": {
+    "NODE_ENV": "staging"
+  }
+}
+```
+
+### Production Configuration (wrangler.production.jsonc)
+
+```jsonc
+{
+  "name": "api-production",
+  "main": "src/index.ts",
+  "compatibility_date": "2025-03-08",
+  "compatibility_flags": ["nodejs_compat"],
+  "vars": {
+    "NODE_ENV": "production"
+  }
+}
+```
+
+## Setting Up Secrets
+
+Before deployment, set up your secrets in Cloudflare:
+
+```bash
+# For staging environment
+wrangler secret put DATABASE_URL --env staging
+wrangler secret put BETTER_AUTH_SECRET --env staging
+
+# For production environment
+wrangler secret put DATABASE_URL --env production
+wrangler secret put BETTER_AUTH_SECRET --env production
+```
+
+<Note title="Security">
+  Never include sensitive information like database credentials or API keys in
+  your wrangler.jsonc files or source code.
+</Note>
+
+## Deployment Commands
+
+The API provides convenient npm scripts for deployment:
+
+```bash
+# Deploy to staging
+pnpm deploy:staging
+
+# Deploy to production
+pnpm deploy:prod
+```
+
+Or you can use Wrangler directly:
+
+```bash
+# Staging deployment
+wrangler deploy --env staging
+
+# Production deployment
+wrangler deploy --env production
+```
+
+## Deployment Process
+
+When you run a deployment command:
+
+1. The code is built and bundled by Wrangler
+2. TypeScript is transpiled to JavaScript
+3. The bundle is uploaded to Cloudflare
+4. The Worker is deployed globally to Cloudflare's network
+5. Environment variables and secrets are injected into the environment
+
+## Custom Domains
+
+To use a custom domain with your API:
+
+1. Add your domain to Cloudflare (if not already there)
+2. Create a Worker Route in the Cloudflare dashboard:
+   - Go to **Workers & Pages** → **Your Worker** → **Triggers** → **Add Custom Domain**
+   - Enter your domain (e.g., `api.yourdomain.com`)
+   - Save the changes
+
+## CORS Configuration
+
+When deploying, update your CORS configuration to include your production domains:
+
+```typescript
+app.use(
+  "*",
+  cors({
+    origin: [
+      "https://yourdomain.com",
+      "https://www.yourdomain.com",
+      "https://staging.yourdomain.com",
+    ],
+    // ... other CORS settings
+  })
+);
+```
+
+Or use the `ALLOWED_ORIGINS` environment variable to manage this dynamically.
+
+## Environment-Specific Settings
+
+The `serverEnv` object from `@repo/env` automatically adjusts settings based on the environment:
+
+```typescript
+import { serverEnv } from "@repo/env";
+
+// Cookies are secure in production
+const cookieOptions = {
+  secure: serverEnv.environment.isProduction,
+  sameSite: "lax",
+  // ...
+};
+```
+
+## Database Considerations
+
+For production deployments:
+
+1. **Connection Pooling**: Use connection pooling for your PostgreSQL database
+2. **Serverless-Friendly Database**: Use a service like Neon, Supabase, or Planetscale
+3. **Connection String**: Update your `DATABASE_URL` with the production connection string
+
+## Monitoring and Logs
+
+Cloudflare provides tools for monitoring your deployed Workers:
+
+1. **Metrics Dashboard**: Access metrics from the Cloudflare dashboard
+2. **Logs**: View logs in the dashboard or via Wrangler
+3. **Alerts**: Set up alerts for errors or performance issues
+
+To view logs:
+
+```bash
+# Stream logs from the deployed Worker
+wrangler tail --env production
+```
+
+## Rollbacks
+
+If you need to roll back to a previous version:
+
+1. Go to the Cloudflare dashboard
+2. Navigate to **Workers & Pages** → **Your Worker** → **Deployments**
+3. Find the version you want to roll back to
+4. Click **Rollback to this version**
+
+## Deployment Checklist
+
+Before deploying to production:
+
+- [ ] Test all API endpoints locally
+- [ ] Set all required environment variables and secrets
+- [ ] Configure CORS for production domains
+- [ ] Ensure database connection settings are correct
+- [ ] Verify authentication and security settings
+- [ ] Test the API with the production web frontend
+
+## Troubleshooting Deployments
+
+If you encounter issues:
+
+- **Deployment Errors**: Check Wrangler output for errors
+- **Runtime Errors**: Check the Cloudflare dashboard logs
+- **Missing Secrets**: Ensure all secrets are properly set
+- **Database Connection**: Verify the database is accessible from Cloudflare
+- **CORS Issues**: Check your CORS configuration and allowed origins
+
+For more detailed troubleshooting, refer to the [Cloudflare Workers documentation](https://developers.cloudflare.com/workers/)

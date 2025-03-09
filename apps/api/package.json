@@ -2,10 +2,14 @@
   "name": "api",
   "scripts": {
     "dev": "wrangler dev",
-    "deploy": "wrangler deploy --minify"
+    "dev:local": "wrangler dev --env development",
+    "deploy": "wrangler deploy --minify",
+    "deploy:staging": "wrangler deploy --env staging",
+    "deploy:prod": "wrangler deploy --env production --minify"
   },
   "dependencies": {
     "@repo/db": "workspace:*",
+    "@repo/env": "workspace:*",
     "better-auth": "^1.2.3",
     "hono": "^4.7.4"
   },

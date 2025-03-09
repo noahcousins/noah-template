@@ -1,0 +1,271 @@
+---
+title: Database Schema
+description: Understanding the database schema in Noah Template
+---
+
+# Database Schema
+
+Noah Template uses [DrizzleORM](https://orm.drizzle.team/) with PostgreSQL for database management. The schema is defined in TypeScript, providing type safety and easy migrations.
+
+## Schema Overview
+
+The database schema is defined in `packages/db/src/schema.ts` and includes tables for users, authentication, and application data.
+
+### Core Authentication Tables
+
+These tables are required for Better Auth integration:
+
+```typescript
+// User table
+export const users = pgTable("user", {
+  id: text("id").primaryKey(),
+  name: text("name"),
+  email: text("email").notNull(),
+  emailVerified: timestamp("emailVerified", { mode: "date" }),
+  image: text("image"),
+});
+
+// Session table for authentication
+export const sessions = pgTable("session", {
+  id: text("id").primaryKey(),
+  userId: text("userId")
+    .notNull()
+    .references(() => users.id, { onDelete: "cascade" }),
+  expiresAt: timestamp("expiresAt", {
+    mode: "date",
+  }).notNull(),
+});
+
+// Account table for OAuth providers
+export const accounts = pgTable(
+  "account",
+  {
+    userId: text("userId")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    type: text("type").notNull(),
+    provider: text("provider").notNull(),
+    providerAccountId: text("providerAccountId").notNull(),
+    refresh_token: text("refresh_token"),
+    access_token: text("access_token"),
+    expires_at: integer("expires_at"),
+    token_type: text("token_type"),
+    scope: text("scope"),
+    id_token: text("id_token"),
+    session_state: text("session_state"),
+  },
+  (account) => ({
+    compoundKey: primaryKey({
+      columns: [account.provider, account.providerAccountId],
+    }),
+  })
+);
+
+// Verification tokens for email verification
+export const verificationTokens = pgTable(
+  "verificationToken",
+  {
+    identifier: text("identifier").notNull(),
+    token: text("token").notNull(),
+    expires: timestamp("expires", { mode: "date" }).notNull(),
+  },
+  (vt) => ({
+    compoundKey: primaryKey({ columns: [vt.identifier, vt.token] }),
+  })
+);
+```
+
+## Relations and Foreign Keys
+
+Tables are related through foreign keys for data integrity:
+
+```typescript
+// Examples of relations
+export const sessions = pgTable("session", {
+  id: text("id").primaryKey(),
+  userId: text("userId")
+    .notNull()
+    .references(() => users.id, { onDelete: "cascade" }),
+  // ... other fields
+});
+
+// Relation helpers
+export const userRelations = relations(users, ({ many }) => ({
+  sessions: many(sessions),
+  accounts: many(accounts),
+}));
+
+export const sessionRelations = relations(sessions, ({ one }) => ({
+  user: one(users, {
+    fields: [sessions.userId],
+    references: [users.id],
+  }),
+}));
+```
+
+## Extending the Schema
+
+To add your own tables, extend the schema with additional definitions:
+
+```typescript
+// Example: Adding a posts table
+export const posts = pgTable("post", {
+  id: serial("id").primaryKey(),
+  title: text("title").notNull(),
+  content: text("content").notNull(),
+  published: boolean("published").default(false).notNull(),
+  authorId: text("authorId")
+    .notNull()
+    .references(() => users.id, { onDelete: "cascade" }),
+  createdAt: timestamp("createdAt", { mode: "date" }).defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt", { mode: "date" }).defaultNow().notNull(),
+});
+
+// Add relations to the users table
+export const userRelations = relations(users, ({ many }) => ({
+  sessions: many(sessions),
+  accounts: many(accounts),
+  posts: many(posts),
+}));
+
+// Add relations to the posts table
+export const postRelations = relations(posts, ({ one }) => ({
+  author: one(users, {
+    fields: [posts.authorId],
+    references: [users.id],
+  }),
+}));
+```
+
+## Database Types
+
+Drizzle generates TypeScript types from your schema:
+
+```typescript
+// Inferred types
+export type User = typeof users.$inferSelect;
+export type NewUser = typeof users.$inferInsert;
+
+export type Session = typeof sessions.$inferSelect;
+export type NewSession = typeof sessions.$inferInsert;
+
+// Example usage
+const getUser = async (id: string): Promise<User | undefined> => {
+  const [user] = await db.select().from(users).where(eq(users.id, id));
+  return user;
+};
+```
+
+## Schema Migrations
+
+Drizzle handles migrations with its CLI tools:
+
+```bash
+# Generate a migration from schema changes
+pnpm -F @repo/db db:generate
+
+# Apply migrations to the database
+pnpm -F @repo/db db:migrate
+
+# Push schema changes without migrations
+pnpm -F @repo/db db:push
+```
+
+Migration files are stored in the `packages/db/migrations` directory.
+
+## Database Client
+
+The database client is set up in `packages/db/src/index.ts`:
+
+```typescript
+import { drizzle } from "drizzle-orm/neon-http";
+import { neon } from "@neondatabase/serverless";
+import { serverEnv } from "@repo/env";
+
+import * as schema from "./schema";
+
+// Create a database connection 
+const sql = neon(serverEnv.database.url);
+export const db = drizzle(sql, { schema });
+
+// Alternative method for custom connection URL
+export const getDb = ({ url }: { url: string }) => {
+  const sql = neon(url);
+  return drizzle(sql, { schema });
+};
+
+// Export schema for use in other parts of the application
+export * from "./schema";
+```
+
+## Database Queries
+
+Examples of common database operations:
+
+### Selecting Data
+
+```typescript
+// Get a single user by ID
+const getUser = async (id: string) => {
+  return await db.query.users.findFirst({
+    where: eq(users.id, id),
+    with: {
+      sessions: true,
+    },
+  });
+};
+
+// Get all users
+const getAllUsers = async () => {
+  return await db.query.users.findMany();
+};
+```
+
+### Inserting Data
+
+```typescript
+// Create a new user
+const createUser = async (userData: NewUser) => {
+  return await db.insert(users).values(userData).returning();
+};
+```
+
+### Updating Data
+
+```typescript
+// Update a user
+const updateUser = async (id: string, userData: Partial<NewUser>) => {
+  return await db
+    .update(users)
+    .set(userData)
+    .where(eq(users.id, id))
+    .returning();
+};
+```
+
+### Deleting Data
+
+```typescript
+// Delete a user
+const deleteUser = async (id: string) => {
+  return await db.delete(users).where(eq(users.id, id)).returning();
+};
+```
+
+## Best Practices
+
+1. **Use Relations**: Define explicit relations between tables
+2. **Type Safety**: Leverage TypeScript types for data validation
+3. **Migrations**: Use migrations for schema changes in production
+4. **Connection Management**: Use connection pooling in production
+5. **Environment Variables**: Store database credentials securely
+6. **Query Builder**: Use the type-safe query builder for complex queries
+
+## PostgreSQL Providers
+
+Noah Template works well with several PostgreSQL providers:
+
+- [Neon](https://neon.tech/) - Serverless PostgreSQL with connection pooling
+- [Supabase](https://supabase.com/) - Open source Firebase alternative
+- [Railway](https://railway.app/) - Simple infrastructure platform
+- [Vercel Postgres](https://vercel.com/storage/postgres) - Integrated with Vercel

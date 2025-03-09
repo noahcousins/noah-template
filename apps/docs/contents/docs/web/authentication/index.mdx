@@ -1,0 +1,331 @@
+---
+title: Web Authentication
+description: Implementing authentication in the Next.js web application
+---
+
+# Web Authentication
+
+Noah Template includes a pre-configured authentication system in the Next.js web application, connecting to the Hono API with Better Auth.
+
+## Authentication Client Setup
+
+The web application uses the Better Auth React client for authentication:
+
+```tsx
+// app/page.tsx
+"use client";
+
+import { Button } from "@repo/ui/components/button";
+import { createAuthClient } from "better-auth/react";
+import { useState } from "react";
+
+export default function Page() {
+  // Initialize Better Auth client pointing to the API
+  const { signIn, signUp } = createAuthClient({
+    baseURL: "http://localhost:8787/api/auth",
+  });
+  
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [name, setName] = useState("");
+  const [isSignUp, setIsSignUp] = useState(false);
+  const [error, setError] = useState("");
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError("");
+    try {
+      if (isSignUp) {
+        await signUp.email({ email, password, name });
+      } else {
+        await signIn.email({ email, password });
+      }
+      window.location.reload();
+    } catch (err) {
+      console.error("Auth error:", err);
+      setError("Authentication failed");
+    }
+  };
+
+  // JSX for login/signup form
+  return (
+    // ... form elements
+  );
+}
+```
+
+## Authentication Form
+
+The template includes a complete authentication form with:
+
+- Email/password sign-in
+- Registration with name, email, and password
+- Form validation
+- Error handling
+- Toggle between sign-in and sign-up modes
+
+## Authentication Flow
+
+1. User enters credentials in the form
+2. The form submits data to the Better Auth client
+3. Better Auth client sends requests to the API
+4. API validates credentials and creates a session
+5. Session cookie is returned to the browser
+6. Page reloads to reflect authenticated state
+
+## Session Management
+
+The authentication state persists through HTTP-only cookies. On page load or navigation, the session is automatically validated.
+
+## Protected Routes
+
+To create protected routes in Next.js:
+
+```tsx
+"use client";
+
+import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
+
+export default function ProtectedPage() {
+  const router = useRouter();
+  const [user, setUser] = useState(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    // Fetch session on component mount
+    async function checkSession() {
+      try {
+        const response = await fetch("http://localhost:8787/session", {
+          credentials: "include", // Important for cookies
+        });
+        
+        if (!response.ok) {
+          // No valid session, redirect to login
+          router.push("/");
+          return;
+        }
+        
+        const data = await response.json();
+        setUser(data.user);
+      } catch (error) {
+        console.error("Session check failed:", error);
+        router.push("/");
+      } finally {
+        setLoading(false);
+      }
+    }
+    
+    checkSession();
+  }, [router]);
+
+  if (loading) {
+    return <div>Loading...</div>;
+  }
+
+  return (
+    <div>
+      <h1>Protected Page</h1>
+      <p>Welcome, {user?.name || "User"}!</p>
+      {/* Protected content */}
+    </div>
+  );
+}
+```
+
+## Authentication Context (Optional)
+
+For more advanced applications, you might want to create an authentication context:
+
+```tsx
+// components/providers.tsx
+"use client";
+
+import { createContext, useContext, useEffect, useState } from "react";
+
+type User = {
+  id: string;
+  name: string | null;
+  email: string;
+};
+
+type AuthContextType = {
+  user: User | null;
+  loading: boolean;
+  signOut: () => Promise<void>;
+};
+
+const AuthContext = createContext<AuthContextType>({
+  user: null,
+  loading: true,
+  signOut: async () => {},
+});
+
+export function AuthProvider({ children }: { children: React.ReactNode }) {
+  const [user, setUser] = useState<User | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  // Fetch session on initial load
+  useEffect(() => {
+    async function loadSession() {
+      try {
+        const response = await fetch("http://localhost:8787/session", {
+          credentials: "include",
+        });
+        
+        if (response.ok) {
+          const data = await response.json();
+          setUser(data.user);
+        }
+      } catch (error) {
+        console.error("Failed to load session:", error);
+      } finally {
+        setLoading(false);
+      }
+    }
+    
+    loadSession();
+  }, []);
+
+  // Sign out function
+  const signOut = async () => {
+    try {
+      await fetch("http://localhost:8787/api/auth/logout", {
+        method: "POST",
+        credentials: "include",
+      });
+      setUser(null);
+      window.location.href = "/";
+    } catch (error) {
+      console.error("Sign out failed:", error);
+    }
+  };
+
+  return (
+    <AuthContext.Provider value={{ user, loading, signOut }}>
+      {children}
+    </AuthContext.Provider>
+  );
+}
+
+export const useAuth = () => useContext(AuthContext);
+```
+
+Then wrap your application in the provider:
+
+```tsx
+// app/layout.tsx
+import { AuthProvider } from "../components/providers";
+
+export default function RootLayout({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
+  return (
+    <html lang="en">
+      <body>
+        <AuthProvider>{children}</AuthProvider>
+      </body>
+    </html>
+  );
+}
+```
+
+## Sign Out
+
+To implement a sign out button:
+
+```tsx
+"use client";
+
+import { Button } from "@repo/ui/components/button";
+import { useAuth } from "../path/to/useAuth"; // If using auth context
+
+export function SignOutButton() {
+  // With auth context
+  const { signOut } = useAuth();
+  
+  // Without auth context
+  const handleSignOut = async () => {
+    try {
+      await fetch("http://localhost:8787/api/auth/logout", {
+        method: "POST",
+        credentials: "include",
+      });
+      window.location.href = "/";
+    } catch (error) {
+      console.error("Sign out failed:", error);
+    }
+  };
+
+  return (
+    <Button onClick={useAuth ? signOut : handleSignOut}>
+      Sign Out
+    </Button>
+  );
+}
+```
+
+## Social Authentication
+
+To enable social authentication:
+
+1. Configure OAuth providers in the API
+2. Add social login buttons to the web app:
+
+```tsx
+// Example OAuth login buttons
+<div className="space-y-2">
+  <Button
+    variant="outline"
+    className="w-full"
+    onClick={() => signIn.oauth("github")}
+  >
+    <GithubIcon className="mr-2 h-4 w-4" />
+    Continue with GitHub
+  </Button>
+  
+  <Button
+    variant="outline"
+    className="w-full"
+    onClick={() => signIn.oauth("google")}
+  >
+    <GoogleIcon className="mr-2 h-4 w-4" />
+    Continue with Google
+  </Button>
+</div>
+```
+
+## Production Configuration
+
+For production, update the Better Auth client baseURL:
+
+```tsx
+const { signIn, signUp } = createAuthClient({
+  baseURL: process.env.NEXT_PUBLIC_API_URL + "/api/auth",
+});
+```
+
+## Error Handling
+
+The template includes error handling for authentication:
+
+```tsx
+try {
+  await signIn.email({ email, password });
+  // Success
+} catch (error) {
+  // Show error message
+  setError("Authentication failed. Please check your credentials.");
+}
+```
+
+## Customization
+
+The authentication UI can be customized by:
+
+1. Modifying the form components
+2. Adding additional fields for registration
+3. Creating a more elaborate authentication flow
+4. Styling the form with Tailwind CSS classes

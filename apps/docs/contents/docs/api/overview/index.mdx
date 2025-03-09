@@ -1,0 +1,164 @@
+---
+title: API Overview
+description: An overview of the Hono API service in Noah Template
+---
+
+# API Overview
+
+The API service in Noah Template is built with [Hono](https://hono.dev/), a lightweight, fast web framework designed for edge runtimes like Cloudflare Workers.
+
+## Architecture
+
+The API follows a simple, modular architecture:
+
+```
+api/
+├── src/
+│   ├── index.ts       # Main entry point
+│   ├── lib/           # Shared utilities
+│   │   └── auth.ts    # Authentication configuration
+│   └── serve.ts       # Development server
+├── wrangler.jsonc     # Cloudflare Workers configuration
+└── package.json       # Dependencies and scripts
+```
+
+## Key Features
+
+### Hono Framework
+
+The API uses Hono for:
+- Route handling
+- Middleware
+- Request/response processing
+- TypeScript integration
+
+### Authentication with Better Auth
+
+The API integrates Better Auth for secure authentication:
+
+```typescript
+// Authentication endpoints at /api/auth/*
+app.on(["POST", "GET"], "/api/auth/**", (c) => {
+  return auth.handler(c.req.raw);
+});
+
+// Session information endpoint
+app.get("/session", async (c) => {
+  const session = c.get("session");
+  const user = c.get("user");
+
+  if (!user) return c.body(null, 401);
+
+  return c.json({
+    session,
+    user,
+  });
+});
+```
+
+### CORS Configuration
+
+Cross-Origin Resource Sharing is configured to allow access from the web frontend:
+
+```typescript
+app.use(
+  "*", // Enable CORS for all routes
+  cors({
+    origin: ["http://localhost:3000", "http://localhost:8787"],
+    allowHeaders: ["Content-Type", "Authorization"],
+    allowMethods: ["POST", "GET", "OPTIONS"],
+    exposeHeaders: ["Content-Length"],
+    maxAge: 600,
+    credentials: true,
+  })
+);
+```
+
+### Middleware
+
+The API includes middleware for:
+- Session handling
+- User context
+- Error handling
+
+```typescript
+app.use("*", async (c, next) => {
+  const session = await auth.api.getSession({ headers: c.req.raw.headers });
+
+  if (!session) {
+    c.set("user", null);
+    c.set("session", null);
+    return next();
+  }
+
+  c.set("user", session.user);
+  c.set("session", session.session);
+  return next();
+});
+```
+
+## Deployment
+
+The API is configured to deploy to Cloudflare Workers using Wrangler:
+
+```jsonc
+// wrangler.jsonc
+{
+  "name": "api",
+  "main": "src/index.ts",
+  "compatibility_date": "2025-03-08",
+  "compatibility_flags": ["nodejs_compat"],
+  "vars": {
+    "NODE_ENV": "development"
+  }
+}
+```
+
+## Environment Variables
+
+The API uses the following environment variables:
+
+| Variable | Description | Default |
+|----------|-------------|---------|
+| `DATABASE_URL` | PostgreSQL connection string | None |
+| `BETTER_AUTH_SECRET` | Secret for Better Auth | None |
+| `BETTER_AUTH_URL` | URL for Better Auth service | http://localhost:8787 |
+| `ALLOWED_ORIGINS` | Comma-separated list of allowed CORS origins | http://localhost:3000,http://localhost:8787 |
+
+<Note title="Security">
+  Never commit real credentials to your repository. Use environment variables and secrets management for production deployments.
+</Note>
+
+## Adding Custom Endpoints
+
+To add a new API endpoint, add a route handler in `src/index.ts`:
+
+```typescript
+// Example GET endpoint
+app.get("/api/hello", (c) => {
+  return c.json({ message: "Hello World" });
+});
+
+// Example POST endpoint with body handling
+app.post("/api/data", async (c) => {
+  const body = await c.req.json();
+  // Process the data
+  return c.json({ success: true, data: body });
+});
+```
+
+## Authentication Logic
+
+The API uses Better Auth for authentication:
+
+1. Users can sign in with email/password or OAuth providers
+2. Sessions are managed with cookies
+3. The middleware extracts user information from the session
+4. Protected routes can check for user presence
+
+## Next Steps
+
+For more details on specific aspects of the API:
+- [Authentication](/docs/api/authentication)
+- [Deployment](/docs/api/deployment)
+- [Environment Variables](/docs/api/environment-variables)
