@@ -1,5 +1,6 @@
 import { betterAuth } from "better-auth";
 import { drizzleAdapter } from "better-auth/adapters/drizzle";
+import { jwt } from "better-auth/plugins";
 import { serverEnv } from "@repo/env";
 import {
   db,
@@ -40,23 +41,43 @@ export const auth = betterAuth({
     name: "better_auth_session",
     httpOnly: true,
     path: "/",
-    secure: serverEnv.environment.isProduction,
-    sameSite: "lax",
+    secure: true, // Always use secure for cross-origin cookies
+    sameSite: "none", // Required for cross-origin cookies
     maxAge: 30 * 24 * 60 * 60, // 30 days in seconds
   },
-  trustedOrigins: serverEnv.auth.allowedOrigins,
+  trustedOrigins: ["http://localhost:3000", "http://localhost:8787"], // Explicitly set trusted origins
   database: drizzleAdapter(db, {
     provider: "pg", // or "mysql", "sqlite"
     schema: authSchema,
   }),
-  // Enable cross-subdomain cookies since Next.js and API are on different origins
+  // Enable cross-domain cookies between Next.js and API
   advanced: {
     crossSubDomainCookies: {
-      enabled: serverEnv.auth.crossSubdomainCookies,
+      enabled: true, // Always enable for cross-origin communication
     },
     defaultCookieAttributes: {
-      sameSite: "lax",
-      secure: serverEnv.environment.isProduction,
+      sameSite: "none", // Required for cross-origin cookies
+      secure: true, // Always use secure for cross-origin cookies
     },
   },
+  plugins: [
+    jwt({
+      jwt: {
+        issuer: serverEnv.auth.url,
+        audience: serverEnv.auth.url,
+        expirationTime: "15m", // 15 minutes
+        definePayload: (user) => ({
+          id: user.id,
+          email: user.email,
+          role: user.role,
+        }),
+      },
+      jwks: {
+        keyPairConfig: {
+          alg: "EdDSA",
+          crv: "Ed25519"
+        },
+      },
+    }),
+  ],
 });

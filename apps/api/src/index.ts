@@ -13,9 +13,9 @@ app.use(
   "*",
   cors({
     origin: ["http://localhost:3000", "http://localhost:8787"], // Both Next.js and API origins
-    allowHeaders: ["Content-Type", "Authorization"],
-    allowMethods: ["POST", "GET", "OPTIONS"],
-    exposeHeaders: ["Content-Length"],
+    allowHeaders: ["Content-Type", "Authorization", "Cookie"],
+    allowMethods: ["POST", "GET", "PUT", "DELETE", "OPTIONS"],
+    exposeHeaders: ["Content-Length", "set-auth-jwt", "Set-Cookie"],
     maxAge: 600,
     credentials: true,
   })

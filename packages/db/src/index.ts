@@ -5,7 +5,9 @@ import { serverEnv } from "@repo/env";
 import * as schema from "./schema";
 
 // Create a database connection with a safer approach
-const sql = neon(serverEnv.database.url);
+const sql = neon(
+  "postgresql://neondb_owner:npg_3OBdWDQX5GHJ@ep-late-base-a8w4fngi-pooler.eastus2.azure.neon.tech/neondb?sslmode=require"
+);
 export const db = drizzle(sql, { schema });
 
 // Alternative method for custom connection URL
