@@ -1,0 +1,11 @@
+this is a folder for ai docs
+
+what are ai docs?
+
+ai docs are a way to give instructions to ai to help it understand the codebase.
+if there are any nuances or confines it should know, write it here.
+
+
+
+
+

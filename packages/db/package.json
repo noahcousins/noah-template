@@ -20,7 +20,8 @@
     "@neondatabase/serverless": "0.10.4",
     "@repo/env": "workspace:*",
     "better-auth": "^1.2.3",
-    "drizzle-orm": "0.40.0"
+    "drizzle-orm": "0.40.0",
+    "nanoid": "^5.1.5"
   },
   "devDependencies": {
     "@repo/typescript-config": "workspace:*",

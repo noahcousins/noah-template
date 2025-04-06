@@ -11,11 +11,12 @@
     "@repo/db": "workspace:*",
     "@repo/env": "workspace:*",
     "better-auth": "^1.2.3",
-    "hono": "^4.7.4"
+    "hono": "^4.7.4",
+    "nanoid": "^5.1.5"
   },
   "devDependencies": {
-    "@repo/typescript-config": "workspace:*",
     "@cloudflare/workers-types": "^4.20250214.0",
+    "@repo/typescript-config": "workspace:*",
     "wrangler": "^3.109.2"
   }
 }

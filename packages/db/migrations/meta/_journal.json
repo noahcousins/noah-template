@@ -22,6 +22,13 @@
       "when": 1743975630539,
       "tag": "0002_familiar_living_tribunal",
       "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1743981400302,
+      "tag": "0003_abnormal_magma",
+      "breakpoints": true
     }
   ]
 }

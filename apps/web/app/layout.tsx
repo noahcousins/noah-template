@@ -1,41 +1,43 @@
-import { Geist, Geist_Mono } from "next/font/google";
+import type { Metadata } from "next";
+import { Inter } from "next/font/google";
+import { auth } from "@/lib/auth";
+import "./globals.css";
+import { Providers } from "./providers";
+import { headers } from "next/headers";
 
-import "@repo/ui/styles/globals.css";
-import { Providers } from "@/components/providers";
-import { SidebarProvider, SidebarTrigger } from "@repo/ui/components/sidebar";
-import { AppSidebar } from "@/components/app-sidebar";
-import { Squircle } from "@squircle-js/react";
+const inter = Inter({ subsets: ["latin"] });
 
-const fontSans = Geist({
-  subsets: ["latin"],
-  variable: "--font-sans",
-});
+export const metadata: Metadata = {
+  title: "Todo App",
+  description: "A simple todo app built with Next.js and tRPC",
+};
 
-const fontMono = Geist_Mono({
-  subsets: ["latin"],
-  variable: "--font-mono",
-});
-
-export default function RootLayout({
+export default async function RootLayout({
   children,
-}: Readonly<{
+}: {
   children: React.ReactNode;
-}>) {
-  return (
-    <html lang="en" suppressHydrationWarning>
-      <body
-        className={`${fontSans.variable} ${fontMono.variable} font-sans antialiased `}
-      >
-        <Providers>
-          <SidebarProvider>
-            <AppSidebar />
-            <main className="bg-primary/5 border border-primary/10 rounded-lg w-full m-2 p-4">
-              <SidebarTrigger />
+}) {
+  const session = await auth.api.getSession({
+    headers: await headers(),
+  });
 
-              {children}
-            </main>
-          </SidebarProvider>
-        </Providers>
+  // Serialize the session data
+  const serializedSession = session
+    ? {
+        session: {
+          ...session.session,
+          createdAt: session.session.createdAt.toISOString(),
+          updatedAt: session.session.updatedAt.toISOString(),
+          expiresAt: session.session.expiresAt.toISOString(),
+        },
+        user: session.user,
+      }
+    : null;
+
+  return (
+    <html lang="en">
+      <body className={inter.className}>
+        <Providers session={serializedSession}>{children}</Providers>
       </body>
     </html>
   );
