@@ -3,13 +3,13 @@ import { publicProcedure, router } from "../server";
 
 export const todoRouter = router({
   getAllTodos: publicProcedure.query(async () => {
-    const response = await fetch("http://localhost:8787/api/todos");
+    const response = await fetch("/api/todos");
     const data = await response.json();
     return data.todos;
   }),
 
   getTodoById: publicProcedure.input(z.string()).query(async ({ input }) => {
-    const response = await fetch(`http://localhost:8787/api/todos/${input}`);
+    const response = await fetch(`/api/todos/${input}`);
     const data = await response.json();
     return data.todo;
   }),
@@ -23,7 +23,7 @@ export const todoRouter = router({
       })
     )
     .mutation(async ({ input }) => {
-      const response = await fetch("http://localhost:8787/api/todos", {
+      const response = await fetch("/api/todos", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -45,7 +45,7 @@ export const todoRouter = router({
     )
     .mutation(async ({ input }) => {
       const { id, ...data } = input;
-      const response = await fetch(`http://localhost:8787/api/todos/${id}`, {
+      const response = await fetch(`/api/todos/${id}`, {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",
@@ -57,7 +57,7 @@ export const todoRouter = router({
     }),
 
   deleteTodo: publicProcedure.input(z.string()).mutation(async ({ input }) => {
-    const response = await fetch(`http://localhost:8787/api/todos/${input}`, {
+    const response = await fetch(`/api/todos/${input}`, {
       method: "DELETE",
     });
     const data = await response.json();
