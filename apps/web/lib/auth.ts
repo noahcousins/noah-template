@@ -1,6 +1,7 @@
 import { betterAuth } from "better-auth";
 import { drizzleAdapter } from "better-auth/adapters/drizzle";
 import { db } from "@repo/db/index";
+import { jwt } from "better-auth/plugins";
 import { nextCookies } from "better-auth/next-js";
 
 export const auth = betterAuth({
@@ -15,7 +16,7 @@ export const auth = betterAuth({
     autoSignIn: true,
     minPasswordLength: 8,
   },
-  plugins: [nextCookies()], // make sure this is the last plugin in the array
+  plugins: [jwt(), nextCookies()], // make sure this is the last plugin in the array
   // Add any social providers you want to use
   // socialProviders: {
   //   github: {

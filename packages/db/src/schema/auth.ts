@@ -61,3 +61,14 @@ export const verifications = pgTable("verifications", {
     .$onUpdate(() => new Date())
     .notNull(),
 });
+
+export const jwkss = pgTable("jwkss", {
+  id: text("id").primaryKey(),
+  publicKey: text("public_key").notNull(),
+  privateKey: text("private_key").notNull(),
+  createdAt: timestamp("created_at").notNull(),
+  updatedAt: timestamp("updated_at")
+    .defaultNow()
+    .$onUpdate(() => new Date())
+    .notNull(),
+});

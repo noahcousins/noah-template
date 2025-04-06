@@ -1,59 +1,47 @@
 import { Hono } from "hono";
-import { auth } from "./lib/auth";
 import { cors } from "hono/cors";
+import { jwt } from "hono/jwt";
+import type { JwtVariables } from "hono/jwt";
 
-type Variables = {
+// Add Node.js types
+declare const process: {
+  env: {
+    JWT_SECRET?: string;
+  };
+};
+
+type Variables = JwtVariables & {
   user: any | null;
   session: any | null;
 };
 
 const app = new Hono<{ Variables: Variables }>();
 
-app.use(
-  "*",
-  cors({
-    origin: ["http://localhost:3000", "http://localhost:8787"], // Both Next.js and API origins
-    allowHeaders: ["Content-Type", "Authorization"],
-    allowMethods: ["POST", "GET", "OPTIONS"],
-    exposeHeaders: ["Content-Length"],
-    maxAge: 600,
-    credentials: true,
-  })
-);
+// Add CORS middleware
+app.use("/*", cors());
 
-app.use("*", async (c, next) => {
-  const session = await auth.api.getSession({ headers: c.req.raw.headers });
-
-  if (!session) {
-    c.set("user", null);
-    c.set("session", null);
-    return next();
-  }
-
-  c.set("user", session.user);
-  c.set("session", session.session);
-  return next();
-});
-
-app.on(["POST", "GET"], "/api/auth/**", (c) => {
-  return auth.handler(c.req.raw);
-});
-
-app.get("/session", async (c) => {
-  const session = c.get("session");
-  const user = c.get("user");
-
-  if (!user) return c.body(null, 401);
-
-  return c.json({
-    session,
-    user,
+// Add JWT middleware for protected routes
+app.use("/api/*", async (c, next) => {
+  const jwtMiddleware = jwt({
+    secret: process.env.JWT_SECRET || "your-secret-key", // Replace with your actual secret
+    cookie: "auth", // Optional: if you want to use cookie-based auth
   });
+  return jwtMiddleware(c, next);
 });
 
+// Public endpoint
 app.get("/", (c) => {
   return c.json({
     message: "Hello World",
+  });
+});
+
+// Protected ping endpoint
+app.get("/api/ping", (c) => {
+  const payload = c.get("jwtPayload");
+  return c.json({
+    message: "Pong!",
+    user: payload, // This will contain the user info from the JWT
   });
 });
 
