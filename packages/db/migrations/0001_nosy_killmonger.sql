@@ -1,1 +1,0 @@
-ALTER TABLE "accounts" ADD COLUMN "account_id" text NOT NULL;

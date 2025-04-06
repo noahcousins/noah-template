@@ -1,11 +1,11 @@
 "use server";
 
 import { z } from "zod";
-import { loginSchema } from "@repo/ui/schemas";
+import { signUpSchema } from "@repo/ui/schemas";
 import { auth } from "@/lib/auth";
 
-export const login = async (values: z.infer<typeof loginSchema>) => {
-  const validatedFields = loginSchema.safeParse(values);
+export const signUp = async (values: z.infer<typeof signUpSchema>) => {
+  const validatedFields = signUpSchema.safeParse(values);
 
   if (!validatedFields.success) {
     return { error: "Invalid fields" };
@@ -14,13 +14,14 @@ export const login = async (values: z.infer<typeof loginSchema>) => {
   const { email, password } = validatedFields.data;
 
   try {
-    await auth.api.signInEmail({
+    await auth.api.signUpEmail({
       body: {
+        name: "",
         email,
         password,
       },
     });
-    return { success: true };
+    return { success: "Account created successfully" };
   } catch (error) {
     return { error: "Invalid email or password" };
   }

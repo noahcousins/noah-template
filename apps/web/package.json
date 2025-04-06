@@ -13,6 +13,7 @@
   },
   "dependencies": {
     "@repo/ui": "workspace:*",
+    "@squircle-js/react": "^1.2.17",
     "better-auth": "^1.2.3",
     "lucide-react": "^0.475.0",
     "next": "^15.2.0",

@@ -2,7 +2,7 @@ import { drizzle } from "drizzle-orm/neon-http";
 import { neon } from "@neondatabase/serverless";
 import { serverEnv } from "@repo/env";
 
-import * as schema from "./schema";
+import * as schema from "./schema/index";
 
 // Create a database connection with a safer approach
 const sql = neon(serverEnv.database.url);
@@ -15,4 +15,4 @@ export const getDb = ({ url }: { url: string }) => {
 };
 
 // Export schema for use in other parts of the application
-export * from "./schema";
+export { schema };

@@ -2,6 +2,8 @@
 
 import * as React from "react";
 import * as LabelPrimitive from "@radix-ui/react-label";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
 import { Slot } from "@radix-ui/react-slot";
 import {
   Controller,
@@ -166,3 +168,5 @@ export {
   FormMessage,
   FormField,
 };
+
+export { useForm, zodResolver };

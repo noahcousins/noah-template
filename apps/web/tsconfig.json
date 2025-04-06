@@ -3,8 +3,10 @@
   "compilerOptions": {
     "baseUrl": ".",
     "paths": {
+      "react": ["./node_modules/@types/react"],
       "@/*": ["./*"],
-      "@repo/ui/*": ["../../packages/ui/src/*"]
+      "@repo/ui/*": ["../../packages/ui/src/*"],
+      "@repo/db/*": ["../../packages/db/src/*"]
     },
     "plugins": [
       {

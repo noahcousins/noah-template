@@ -5,7 +5,7 @@ import { serverEnv } from "@repo/env";
 const dbUrl = serverEnv.database.url;
 
 export default defineConfig({
-  schema: "./src/schema.ts",
+  schema: "./src/schema/index.ts",
   out: "./migrations",
   dialect: "postgresql",
   dbCredentials: {

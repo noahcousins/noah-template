@@ -3,6 +3,8 @@
 import { zodResolver } from "@repo/ui/components/form";
 import { useForm } from "@repo/ui/components/form";
 import { z } from "zod";
+import { useState } from "react";
+import { useRouter } from "next/navigation";
 
 import { Button } from "@repo/ui/components/button";
 import {
@@ -14,9 +16,7 @@ import {
   FormMessage,
 } from "@repo/ui/components/form";
 import { Input } from "@repo/ui/components/input";
-import { useState } from "react";
-import { useRouter } from "next/navigation";
-import { login } from "@/actions/login";
+import { signUp } from "@/actions/signup";
 import { Alert, AlertDescription } from "@repo/ui/components/alert";
 import { Loader2 } from "lucide-react";
 
@@ -29,7 +29,7 @@ const formSchema = z.object({
   }),
 });
 
-export function LoginForm() {
+export function SignupForm() {
   const router = useRouter();
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
@@ -46,7 +46,7 @@ export function LoginForm() {
     try {
       setIsLoading(true);
       setError(null);
-      const result = await login(values);
+      const result = await signUp(values);
 
       if (result.error) {
         setError(result.error);
@@ -79,10 +79,10 @@ export function LoginForm() {
               <FormLabel>Email</FormLabel>
               <FormControl>
                 <Input
+                  disabled={isLoading}
                   placeholder="you@example.com"
                   type="email"
                   {...field}
-                  disabled={isLoading}
                 />
               </FormControl>
               <FormMessage />
@@ -97,10 +97,10 @@ export function LoginForm() {
               <FormLabel>Password</FormLabel>
               <FormControl>
                 <Input
+                  disabled={isLoading}
                   placeholder="••••••••"
                   type="password"
                   {...field}
-                  disabled={isLoading}
                 />
               </FormControl>
               <FormMessage />
@@ -111,10 +111,10 @@ export function LoginForm() {
           {isLoading ? (
             <>
               <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              Signing in...
+              Creating account...
             </>
           ) : (
-            "Sign in"
+            "Create Account"
           )}
         </Button>
       </form>
