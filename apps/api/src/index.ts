@@ -11,6 +11,7 @@ type Variables = {
 
 type Bindings = {
   DATABASE_URL: string;
+  API_TOKEN: string;
 };
 
 const app = new Hono<{
@@ -20,6 +21,21 @@ const app = new Hono<{
 
 // Apply CORS middleware if needed
 app.use("/*", cors());
+
+// API Token verification middleware
+app.use("/api/*", async (c, next) => {
+  const authHeader = c.req.header("Authorization");
+  if (!authHeader) {
+    return c.json({ error: "Missing Authorization header" }, 401);
+  }
+
+  const token = authHeader.split(" ")[1];
+  if (!token || token !== c.env.API_TOKEN) {
+    return c.json({ error: "Invalid API token" }, 401);
+  }
+
+  await next();
+});
 
 app.get("/", (c) => {
   return c.json({

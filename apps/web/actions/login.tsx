@@ -19,6 +19,11 @@ export const login = async (values: z.infer<typeof loginSchema>) => {
         email,
         password,
       },
+      onSuccess: (ctx: any) => {
+        const authToken = ctx.response.headers.get("set-auth-token"); // get the token from the response headers
+        // Store the token securely (e.g., in localStorage)
+        localStorage.setItem("bearer_token", authToken);
+      },
     });
     return { success: true };
   } catch (error) {

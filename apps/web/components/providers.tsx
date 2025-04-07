@@ -11,7 +11,7 @@ interface ProvidersProps {
 
 export function Providers({ children, session }: ProvidersProps) {
   return (
-    <AuthProvider initialUser={session?.user}>
+    <AuthProvider userId={session?.user?.id}>
       <NextThemesProvider
         attribute="class"
         defaultTheme="system"

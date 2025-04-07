@@ -11,7 +11,7 @@ import { Providers } from "./providers";
 import { SidebarProvider, SidebarTrigger } from "@repo/ui/components/sidebar";
 import { AppSidebar } from "@/components/app-sidebar";
 import { Squircle } from "@squircle-js/react";
-
+import { Session } from "better-auth";
 const fontSans = Geist({
   subsets: ["latin"],
   variable: "--font-sans",
@@ -36,25 +36,12 @@ export default async function RootLayout({
     headers: await headers(),
   });
 
-  // Serialize the session data
-  const serializedSession = session
-    ? {
-        session: {
-          ...session.session,
-          createdAt: session.session.createdAt.toISOString(),
-          updatedAt: session.session.updatedAt.toISOString(),
-          expiresAt: session.session.expiresAt.toISOString(),
-        },
-        user: session.user,
-      }
-    : null;
-
   return (
-    <html lang="en">
+    <html lang="en" suppressHydrationWarning>
       <body
         className={`${fontSans.variable} ${fontMono.variable} font-sans antialiased `}
       >
-        <Providers session={serializedSession}>
+        <Providers session={session?.session ?? null}>
           <SidebarProvider>
             <AppSidebar />
             <main className="bg-primary/5 border border-primary/10 rounded-lg w-full m-2 p-4">

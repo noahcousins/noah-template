@@ -73,3 +73,8 @@ export async function deleteTodo(dbUrl: string, id: string) {
   await db.delete(todos).where(eq(todos.id, id));
   return { message: "Todo deleted successfully" };
 }
+
+export async function getTodosByUserId(dbUrl: string, userId: string) {
+  const db = getDb({ url: dbUrl });
+  return db.select().from(todos).where(eq(todos.userId, userId));
+}

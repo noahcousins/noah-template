@@ -6,6 +6,7 @@ import {
   createTodo,
   updateTodo,
   deleteTodo,
+  getTodosByUserId,
 } from "@repo/db/queries/todos";
 
 type Variables = {
@@ -22,19 +23,34 @@ const todosRouter = new Hono<{
   Bindings: Bindings;
 }>();
 
-// Get all todos
+// Get all todos for the user
 todosRouter.get("/", async (c) => {
-  const todosData = await getAllTodos(c.env.DATABASE_URL);
+  const userId = c.req.header("X-User-ID");
+  if (!userId) {
+    return c.json({ error: "Missing user ID" }, 401);
+  }
+
+  const todosData = await getTodosByUserId(c.env.DATABASE_URL, userId);
   return c.json({ todos: todosData });
 });
 
 // Get todo by ID
 todosRouter.get("/:id", async (c) => {
   const id = c.req.param("id");
+  const userId = c.req.header("X-User-ID");
+  if (!userId) {
+    return c.json({ error: "Missing user ID" }, 401);
+  }
+
   const todo = await getTodoById(c.env.DATABASE_URL, id);
 
   if (!todo.length) {
     return c.json({ error: "Todo not found" }, 404);
+  }
+
+  // Check if the todo belongs to the user
+  if (todo[0]?.userId !== userId) {
+    return c.json({ error: "Unauthorized" }, 403);
   }
 
   return c.json({ todo: todo[0] });
@@ -42,11 +58,16 @@ todosRouter.get("/:id", async (c) => {
 
 // Create todo
 todosRouter.post("/", async (c) => {
+  const userId = c.req.header("X-User-ID");
+  if (!userId) {
+    return c.json({ error: "Missing user ID" }, 401);
+  }
+
   const body = await c.req.json();
   const newTodo = await createTodo(c.env.DATABASE_URL, {
     title: body.title,
     description: body.description,
-    userId: body.userId,
+    userId: userId,
   });
   return c.json({ todo: newTodo }, 201);
 });
@@ -54,7 +75,22 @@ todosRouter.post("/", async (c) => {
 // Update todo
 todosRouter.put("/:id", async (c) => {
   const id = c.req.param("id");
+  const userId = c.req.header("X-User-ID");
+  if (!userId) {
+    return c.json({ error: "Missing user ID" }, 401);
+  }
+
   const body = await c.req.json();
+
+  const existingTodo = await getTodoById(c.env.DATABASE_URL, id);
+  if (!existingTodo.length) {
+    return c.json({ error: "Todo not found" }, 404);
+  }
+
+  // Check if the todo belongs to the user
+  if (existingTodo[0]?.userId !== userId) {
+    return c.json({ error: "Unauthorized" }, 403);
+  }
 
   try {
     const updatedTodo = await updateTodo(c.env.DATABASE_URL, id, body);
@@ -70,6 +106,20 @@ todosRouter.put("/:id", async (c) => {
 // Delete todo
 todosRouter.delete("/:id", async (c) => {
   const id = c.req.param("id");
+  const userId = c.req.header("X-User-ID");
+  if (!userId) {
+    return c.json({ error: "Missing user ID" }, 401);
+  }
+
+  const existingTodo = await getTodoById(c.env.DATABASE_URL, id);
+  if (!existingTodo.length) {
+    return c.json({ error: "Todo not found" }, 404);
+  }
+
+  // Check if the todo belongs to the user
+  if (existingTodo[0]?.userId !== userId) {
+    return c.json({ error: "Unauthorized" }, 403);
+  }
 
   try {
     const result = await deleteTodo(c.env.DATABASE_URL, id);

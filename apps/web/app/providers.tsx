@@ -1,39 +1,28 @@
 "use client";
 
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { api, trpcClient } from "@/lib/trpc/client";
 import { useState } from "react";
-
+import { ThemeProvider } from "next-themes";
+import { Session } from "better-auth";
+import { AuthProvider } from "@/lib/auth-context";
 type Props = {
   children: React.ReactNode;
-  session: {
-    session: {
-      id: string;
-      createdAt: string;
-      updatedAt: string;
-      userId: string;
-      expiresAt: string;
-      token: string;
-      ipAddress?: string | null;
-      userAgent?: string | null;
-    };
-    user: {
-      id: string;
-      email: string;
-      name?: string | null;
-      image?: string | null;
-    };
-  } | null;
+  session: Session | null;
 };
 
 export function Providers({ children, session }: Props) {
   const [queryClient] = useState(() => new QueryClient());
 
   return (
-    <QueryClientProvider client={queryClient}>
-      <api.Provider client={trpcClient} queryClient={queryClient}>
+    <AuthProvider userId={session?.userId ?? null}>
+      <ThemeProvider
+        attribute="class"
+        defaultTheme="system"
+        enableSystem
+        disableTransitionOnChange
+      >
         {children}
-      </api.Provider>
-    </QueryClientProvider>
+      </ThemeProvider>
+    </AuthProvider>
   );
 }

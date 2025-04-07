@@ -3,42 +3,21 @@
 import * as React from "react";
 import { createContext, useContext, useEffect, useState } from "react";
 
-interface User {
-  id: string;
-  email: string;
-  // Add other user properties as needed
-}
-
-interface AuthContextType {
-  isAuthenticated: boolean;
-  user: User | null;
-}
-
-const AuthContext = createContext<AuthContextType | undefined>(undefined);
+const AuthContext = createContext<string | null>(null);
 
 interface AuthProviderProps {
   children: React.ReactNode;
-  initialUser: User | null;
+  userId: string | null;
 }
 
-export function AuthProvider({ children, initialUser }: AuthProviderProps) {
-  const [user, setUser] = useState<User | null>(initialUser);
-  const isAuthenticated = !!user;
+export function AuthProvider({ children, userId }: AuthProviderProps) {
+  const [id, setId] = useState<string | null>(userId);
 
   useEffect(() => {
-    setUser(initialUser);
-  }, [initialUser]);
+    setId(userId);
+  }, [userId]);
 
-  return (
-    <AuthContext.Provider
-      value={{
-        isAuthenticated,
-        user,
-      }}
-    >
-      {children}
-    </AuthContext.Provider>
-  );
+  return <AuthContext.Provider value={id}>{children}</AuthContext.Provider>;
 }
 
 export function useAuth() {
